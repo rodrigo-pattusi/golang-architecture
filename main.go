@@ -8,10 +8,18 @@ import (
 
 func main() {
 	ctx := context.Background()
-	ctx = session.SetUserID(ctx, 1)
-	ctx = session.SetAdminAccess(ctx, true)
 
-	uID := session.GetUserID(ctx)
-	isAdmin := session.GetAdmin(ctx)
+	ctx = session.SetUserId(ctx, 1)
+	ctx = session.SetIsAdmin(ctx, true)
+
+	uID := session.GetUserId(ctx)
+	isAdmin := session.GetIsAdmin(ctx)
 	fmt.Printf("User %d is an admin %t", uID, isAdmin)
+
+	ctx = session.SetUserId(ctx, 1)
+	ctx = session.SetIsAdmin(ctx, true)
+	i := session.GetUserId(ctx)
+	b := session.GetIsAdmin(ctx)
+	fmt.Printf("user %d is admin %t\n", i, b)
+
 }
