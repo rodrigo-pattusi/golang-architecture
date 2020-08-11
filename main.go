@@ -3,18 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net"
 )
 
 type ErrFile struct {
 	Filename string
-	Base error
+	Base     error
 }
 
 func (e ErrFile) Error() string {
 	return fmt.Sprintf("File %s: %v", e.Filename, e.Base)
 }
 
-func (e ErrFile) Unwrap() error{
+func (e ErrFile) Unwrap() error {
 	return e.Base
 }
 
@@ -25,32 +26,34 @@ func (e ErrFile) Is(other error) bool {
 var ErrNotExist = fmt.Errorf("File does not exist")
 var ErrUserNotExist = errors.New("User does not exist")
 
-func openFile(filename string)(string, error){
-	return "", ErrNotExist
-}
-
-func openFile2(filename string)(string, error){
+func openFile(filename string) (string, error) {
 	return "", ErrFile{
 		Filename: filename,
-		Base: ErrNotExist,
+		Base:     ErrNotExist,
 	}
+}
+func processFile(filename string) error {
+	_, err := openFile(filename)
+	if err != nil {
+		return fmt.Errorf("Error while opening file: %w", err)
+	}
+	return nil
 }
 
 func main() {
-	_, err := openFile("test.txt")
+	err := processFile("test.txt")
 	if err != nil {
-		wrappedErr := fmt.Errorf("Unable to open file %v: %w", "test.txt", err)
-		if errors.Is(wrappedErr, ErrNotExist){
-			fmt.Println("This is an ErrNotExist")
+		var fErr ErrFile
+		if errors.As(err, &fErr) {
+			fmt.Printf("Was unable to do something with file %s\n", fErr.Filename)
 		}
-		fmt.Println(wrappedErr)
-	}
-
-	_, err = openFile2("test.txt")
-	if err != nil {
-		if errors.Is(err, ErrNotExist){
-			fmt.Println("This is an ErrNotExist")
+		var netErr net.Error
+		if errors.As(err, &netErr){
+			if netErr.Temporary() {
+				// Retry
+			}
 		}
+		// Some other error
 		fmt.Println(err)
 	}
 }
