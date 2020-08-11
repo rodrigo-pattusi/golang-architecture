@@ -1,45 +1,39 @@
 package main
 
-import (
+import(
 	"errors"
 	"fmt"
-	"log"
-	"os"
 )
 
+func cat() error {
+	return errors.New("cat is an error")
+}
+
+func moo() error {
+	return fmt.Errorf("moo is an error: %w", cat())
+}
+
+func bar() error {
+	return fmt.Errorf("bar is an error: %w", moo())
+}
+
+func foo() error {
+	return fmt.Errorf("foo is an error: %w", bar())
+}
+
 func main() {
-	f, err := os.Open("rumi.txt")
+	err := foo()
+	fmt.Println(err)
 
-	var perr *os.PathError
+	baseErr := errors.Unwrap(err)
+	fmt.Println(baseErr)
 
-	switch {
-	case errors.Is(err, os.ErrPermission) && errors.As(err, &perr):
-		err = fmt.Errorf("you do not have permission to open the file: %w and the path is %s", err, perr.Path)
-		log.Println(err)
-	case errors.Is(err, os.ErrPermission) && errors.As(err, &perr):
-		err = fmt.Errorf("the file does not exist: %w and the path %s", err, perr.Path)
-		log.Println(err)
-	case errors.As(err, &perr):
-		err = fmt.Errorf("here is the original error %w and the path error %s", err, perr.Path)
-		log.Println(err)
-	case err != nil:
-		err = fmt.Errorf("file couldn't be opened: %w", err)
-		log.Println(err)
-	}
+	baseErr = errors.Unwrap(baseErr)
+	fmt.Println(baseErr)
 
-	//if errors.Is(err, os.ErrPermission) && errors.As(err, &perr) {
-	//	err = fmt.Errorf("you do not have permission to open the file: %w and the path is %s", err, perr.Path)
-	//	log.Println(err)
-	//} else if errors.Is(err, os.ErrPermission) && errors.As(err, &perr) {
-	//	err = fmt.Errorf("the file does not exist: %w and the path %s", err, perr.Path)
-	//	log.Println(err)
-	//} else if errors.As(err, &perr) {
-	//	// fmt.Errorf("here is the original error %w and the path %s", err, perr.Path) // RETURNS A STRING
-	//	err = fmt.Errorf("here is the original error %w and the path error %s", err, perr.Path)
-	//	log.Println(err)
-	//} else if err != nil {
-	//	err = fmt.Errorf("file couldn't be opened: %w", err)
-	//	log.Println(err)
-	//}
-	defer f.Close()
+	baseErr = errors.Unwrap(baseErr)
+	fmt.Println(baseErr)
+
+	baseErr = errors.Unwrap(baseErr)
+	fmt.Println(baseErr)
 }
