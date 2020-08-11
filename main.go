@@ -1,37 +1,56 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"fmt"
-	"runtime"
-	"time"
 )
 
-func main() {
-	fmt.Printf("GOROUTINES RUNNING UP %d\n", runtime.NumGoroutine())
-	ctx := context.Background()
-	ctx, cancelF := context.WithCancel(ctx)
-	defer cancelF()
+type ErrFile struct {
+	Filename string
+	Base error
+}
 
-	for i := 0; i < 100; i++ {
-		go func(n int) {
-			fmt.Println("launching goroutine", n)
-			for {
-				select {
-				case <-ctx.Done():
-					runtime.Goexit()
-					//return
-				default:
-					fmt.Printf("goroutine %d is doing work\n", n)
-					time.Sleep(50 * time.Millisecond)
-				}
-			}
-		}(i)
+func (e ErrFile) Error() string {
+	return fmt.Sprintf("File %s: %v", e.Filename, e.Base)
+}
+
+func (e ErrFile) Unwrap() error{
+	return e.Base
+}
+
+func (e ErrFile) Is(other error) bool {
+	return other == ErrNotExist
+}
+
+var ErrNotExist = fmt.Errorf("File does not exist")
+var ErrUserNotExist = errors.New("User does not exist")
+
+func openFile(filename string)(string, error){
+	return "", ErrNotExist
+}
+
+func openFile2(filename string)(string, error){
+	return "", ErrFile{
+		Filename: filename,
+		Base: ErrNotExist,
 	}
-	time.Sleep(time.Millisecond)
-	fmt.Printf("GOROUTINES RUNNING AFTER ONE MILLISECOND!!! %d\n", runtime.NumGoroutine())
-	cancelF()
-	time.Sleep(100 * time.Millisecond)
-	fmt.Printf("GOROUTINES RUNNING AFTER CANCELFUNC CALLED!!! %d\n", runtime.NumGoroutine())
+}
 
+func main() {
+	_, err := openFile("test.txt")
+	if err != nil {
+		wrappedErr := fmt.Errorf("Unable to open file %v: %w", "test.txt", err)
+		if errors.Is(wrappedErr, ErrNotExist){
+			fmt.Println("This is an ErrNotExist")
+		}
+		fmt.Println(wrappedErr)
+	}
+
+	_, err = openFile2("test.txt")
+	if err != nil {
+		if errors.Is(err, ErrNotExist){
+			fmt.Println("This is an ErrNotExist")
+		}
+		fmt.Println(err)
+	}
 }
