@@ -1,39 +1,57 @@
 package main
 
-import(
-	"errors"
-	"fmt"
+import (
+	"io"
+	"os"
 )
 
-func cat() error {
-	return errors.New("cat is an error")
+type writeFile struct {
+	f *os.File
+	err error
 }
 
-func moo() error {
-	return fmt.Errorf("moo is an error: %w", cat())
+func newWriteFile(filename string) *writeFile{
+	f, err := os.Create(filename)
+	return &writeFile{
+		f: f,
+		err: err,
+	}
 }
 
-func bar() error {
-	return fmt.Errorf("bar is an error: %w", moo())
+func (w *writeFile) WriteString(text string){
+	if w.err != nil {
+		return
+	}
+
+	_, err := io.WriteString(w.f, text)
+	if err != nil {
+		return
+	}
 }
 
-func foo() error {
-	return fmt.Errorf("foo is an error: %w", bar())
+func (w *writeFile)Close(){
+	if w.err != nil {
+		return
+	}
+
+	err := w.f.Close()
+	if err != nil {
+		w.err = err
+	}
+}
+
+func (w *writeFile) Err() error{
+	return w.err
 }
 
 func main() {
-	err := foo()
-	fmt.Println(err)
+	f := newWriteFile("file.txt")
+	f.WriteString("Hello World")
+	f.WriteString( "More Text!")
+	f.Close()
 
-	baseErr := errors.Unwrap(err)
-	fmt.Println(baseErr)
-
-	baseErr = errors.Unwrap(baseErr)
-	fmt.Println(baseErr)
-
-	baseErr = errors.Unwrap(baseErr)
-	fmt.Println(baseErr)
-
-	baseErr = errors.Unwrap(baseErr)
-	fmt.Println(baseErr)
+	err := f.Err()
+	if err != nil {
+		panic(err)
+	}
 }
